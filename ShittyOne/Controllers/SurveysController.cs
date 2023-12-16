@@ -27,6 +27,13 @@ namespace ShittyOne.Controllers
             _mapper = mapper;
         }
 
+        /// <summary>
+        /// Получение опросов с пагинацией
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="size"></param>
+        /// <param name="search"></param>
+        /// <returns></returns>
         [HttpGet]
         [ProducesResponseType(typeof(SelectModel<SurveyModel>), 200)]
         public async Task<IActionResult> GetSurveys(int page = 1, int size = 10, string? search = null)
@@ -58,6 +65,11 @@ namespace ShittyOne.Controllers
             });
         }
 
+        /// <summary>
+        /// Получение деталки опроса
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(SurveyModel), 200)]
         public async Task<IActionResult> Detail(Guid id)
@@ -81,6 +93,11 @@ namespace ShittyOne.Controllers
             return Ok(_mapper.Map<SurveyModel>(survey));
         }
 
+        /// <summary>
+        /// Создание опроса
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = nameof(Roles.Admin))]
         [HttpPost]
         public async Task<IActionResult> Add([FromBody] PostSurveyModel model)
@@ -98,6 +115,12 @@ namespace ShittyOne.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Создание вопросов
+        /// </summary>
+        /// <param name="surveyId"></param>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [HttpPost("{surveyId}/Questions")]
         public async Task<IActionResult> AddQuestion(Guid surveyId, [FromBody] PostQuestionModel model)
         {

@@ -51,6 +51,8 @@
         public string Type { get; set; }
         public string JsonContent { get; set; }
         public SurveyModel Survey { get; set; }
+        public List<UserModel> Users { get; set; } = new List<UserModel>();
+        public List<GroupModel> Groups { get; set; } = new List<GroupModel>();
     }
 
     public class StringQuestionModel : QuestionModel

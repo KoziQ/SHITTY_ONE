@@ -40,11 +40,11 @@ var jwtOptions = builder.Configuration.GetSection("JwtOptions");
 
 builder.Services.Configure<JwtOptions>(opts =>
 {
-    opts.SecretKey = jwtOptions["SecretKey"];
-    opts.Audience = jwtOptions["Audience"];
-    opts.Issuer = jwtOptions["Issuer"];
-    opts.EpiresIn = jwtOptions["ExpiresIn"];
-    opts.RrefreshLifetime = TimeSpan.FromDays(double.Parse(jwtOptions["RefreshLifetime"]));
+    opts.SecretKey = jwtOptions["SecretKey"]!;
+    opts.Audience = jwtOptions["Audience"]!;
+    opts.Issuer = jwtOptions["Issuer"]!;
+    opts.EpiresIn = jwtOptions["ExpiresIn"]!;
+    opts.RrefreshLifetime = TimeSpan.FromDays(double.Parse(jwtOptions["RefreshLifetime"]!));
     opts.ValidFor = TimeSpan.FromHours(Convert.ToDouble(jwtOptions["ExpireDays"]));
 });
 
@@ -67,7 +67,7 @@ builder.Services.AddAuthentication(opts =>
         ValidIssuer = jwtOptions["Issuer"],
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(
-            jwtOptions["SecretKey"])),
+            jwtOptions["SecretKey"]!)),
         ValidateLifetime = true,
         SaveSigninToken = true,
         ClockSkew = TimeSpan.Zero
@@ -81,7 +81,7 @@ builder.Services.AddJobManager()
 
 builder.Services.AddSingleton(provider => new MapperConfiguration(cfg =>
 {
-    cfg.AddProfile(new ShittyOne.Mappings.MappingProfile(provider.GetService<IHttpContextAccessor>()));
+    cfg.AddProfile(new ShittyOne.Mappings.MappingProfile(provider.GetService<IHttpContextAccessor>()!));
 }).CreateMapper());
 
 builder.Services.AddApiVersioning(o =>

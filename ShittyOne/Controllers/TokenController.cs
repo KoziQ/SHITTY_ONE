@@ -34,6 +34,11 @@ namespace ShittyOne.Controllers
             _jwtOptions = options.Value;
         }
 
+        /// <summary>
+        /// Получение токена
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [HttpPost("")]
         public async Task<IActionResult> GetToken([FromBody] LoginModel model)
         {
@@ -71,13 +76,13 @@ namespace ShittyOne.Controllers
             foreach(var roleName in roles)
             {
                 var role = await _roleManager.FindByNameAsync(roleName);
-                var claim = await _roleManager.GetClaimsAsync(role);
+                var claim = await _roleManager.GetClaimsAsync(role!);
                 claims.AddRange(claim);
             }
 
             claims = claims.Distinct().ToList();
 
-            var identity = _jwtService.GenerateClaimsIdentity(user.Email, user.Id, user.SecurityStamp, claims);
+            var identity = _jwtService.GenerateClaimsIdentity(user!.Email!, user.Id, user!.SecurityStamp!, claims);
 
             var refresh = new UserRefresh
             {
@@ -97,6 +102,11 @@ namespace ShittyOne.Controllers
             return Ok(jwt);
         }
 
+        /// <summary>
+        /// Рефреш токена
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [HttpPost("Refresh")]
         public async Task<IActionResult> GetRefresh([FromBody] TokenModel model)
         {
@@ -122,7 +132,7 @@ namespace ShittyOne.Controllers
                 return Forbid();
             }
 
-            var token = _jwtService.GenerateToken(principals.Identity as ClaimsIdentity);
+            var token = _jwtService.GenerateToken((ClaimsIdentity)principals!.Identity!);
 
             var newRef = new UserRefresh
             {

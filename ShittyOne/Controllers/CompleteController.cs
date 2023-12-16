@@ -27,6 +27,11 @@ namespace ShittyOne.Controllers
             _mapper = mapper;
         }
 
+        /// <summary>
+        /// Получение отчёта
+        /// </summary>
+        /// <param name="surveyId"></param>
+        /// <returns></returns>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = nameof(Roles.Admin))]
         [HttpGet("Report")]
         public async Task<IActionResult> GetReport(Guid surveyId)
@@ -95,6 +100,11 @@ namespace ShittyOne.Controllers
             }
         }
 
+        /// <summary>
+        /// Получение опроса с вопросами
+        /// </summary>
+        /// <param name="surveyId"></param>
+        /// <returns></returns>
         [HttpGet()]
         [ProducesResponseType(typeof(SurveyModel), 200)]
         public async Task<IActionResult> GetSurveyQuestions(Guid surveyId)
@@ -115,6 +125,14 @@ namespace ShittyOne.Controllers
             return Ok(_mapper.Map<SurveyModel>(survey));
         }
 
+        /// <summary>
+        /// Ответ на вопрос
+        /// </summary>
+        /// <param name="questionId"></param>
+        /// <param name="surveyId"></param>
+        /// <param name="model"></param>
+        /// <param name="sessionId"></param>
+        /// <returns></returns>
         [HttpPost("{questionId}")]
         public async Task<IActionResult> CompleteQuestion(Guid questionId,Guid surveyId, [FromBody] PostUserAnswer model, Guid? sessionId = null)
         {
@@ -128,7 +146,7 @@ namespace ShittyOne.Controllers
                 return NotFound();
             }
 
-            UserSession session;
+            UserSession? session;
 
             if (sessionId != null)
             {
@@ -143,7 +161,7 @@ namespace ShittyOne.Controllers
             {
                 session = new UserSession
                 {
-                    User = user,
+                    User = user!,
                     SurveyId = surveyId
                 };
 

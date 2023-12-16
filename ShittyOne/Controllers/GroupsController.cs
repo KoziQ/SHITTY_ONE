@@ -26,6 +26,11 @@ namespace ShittyOne.Controllers
             _dbContext = dbContext;
         }
 
+        /// <summary>
+        /// Получение деталки группы
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(GroupModel), 200)]
         public async Task<IActionResult> Detail(Guid id)
@@ -40,9 +45,16 @@ namespace ShittyOne.Controllers
             return Ok(_mapper.Map<GroupModel>(group));
         }
 
+        /// <summary>
+        /// Получение групп с пагинацией
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="size"></param>
+        /// <param name="search"></param>
+        /// <returns></returns>
         [HttpGet]
         [ProducesResponseType(typeof(SelectModel<GroupModel>), 200)]
-        public async Task<IActionResult> Select(int page = 1, int size = 10, string? search = null)
+        public IActionResult Select(int page = 1, int size = 10, string? search = null)
         {
             if(page < 1 || size < 1)
             {
@@ -66,9 +78,16 @@ namespace ShittyOne.Controllers
             });
         }
 
+        /// <summary>
+        /// Получение пользователей
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="size"></param>
+        /// <param name="search"></param>
+        /// <returns></returns>
         [HttpGet("Users")]
         [ProducesResponseType(typeof(SelectModel<UserModel>), 200)]
-        public async Task<IActionResult> SelectUsers(int page = 1, int size = 10, string? search = null)
+        public IActionResult SelectUsers(int page = 1, int size = 10, string? search = null)
         {
             if (page < 1 || size < 1)
             {
@@ -92,6 +111,11 @@ namespace ShittyOne.Controllers
             });
         }
 
+        /// <summary>
+        /// Создание группы
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> Add([FromBody] PostGroupModel model)
         {
@@ -120,6 +144,12 @@ namespace ShittyOne.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Изменение группы
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(Guid id, [FromBody] PostGroupModel model)
         {
@@ -159,6 +189,11 @@ namespace ShittyOne.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Удаление группы
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
