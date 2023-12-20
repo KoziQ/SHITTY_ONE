@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,19 +12,10 @@ namespace ShittyOne.Controllers;
 
 [ApiController]
 [ApiVersion("1.0")]
-[Route("api/{version:apiVersion}/[controller]")]
+[Route("api/{version:apiVersion}/surveys")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class SurveysController : ControllerBase
+public class SurveysController(AppDbContext dbContext, IMapper mapper) : ControllerBase
 {
-    private readonly AppDbContext _dbContext;
-    private readonly IMapper _mapper;
-
-    public SurveysController(AppDbContext dbContext, IMapper mapper)
-    {
-        _dbContext = dbContext;
-        _mapper = mapper;
-    }
-
     /// <summary>
     ///     Получение опросов с пагинацией
     /// </summary>
@@ -32,8 +24,8 @@ public class SurveysController : ControllerBase
     /// <param name="search"></param>
     /// <returns></returns>
     [HttpGet]
-    [ProducesResponseType(typeof(SelectModel<SurveyModel>), 200)]
-    public async Task<IActionResult> GetSurveys(int page = 1, int size = 10, string? search = null)
+    public async Task<ActionResult<SelectModel<SurveyModel>>> GetSurveys(int page = 1, int size = 10,
+        string? search = null)
     {
         if (page < 1 || size < 1)
         {
@@ -41,24 +33,25 @@ public class SurveysController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var user = await _dbContext.Users.Include(u => u.Groups).AsNoTracking()
+        // TODO add survey filtering if user is not admin
+        var user = await dbContext.Users.Include(u => u.Groups).AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id.ToString() == User.GetId());
 
-        var surveys = _dbContext
+        var surveys = dbContext
             .Surveys
             .AsNoTracking()
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(search)) surveys = surveys.Where(s => EF.Functions.Like(s.Title, $"%{search}%"));
 
-        var count = surveys.Count();
-
-        return Ok(new SelectModel<SurveyModel>
+        return new SelectModel<SurveyModel>
         {
-            Data = surveys.OrderByDescending(s => s.Title).Skip((page - 1) * size).Take(size)
-                .Select(s => _mapper.Map<SurveyModel>(s)).ToList(),
-            More = count > page * size
-        });
+            Items = surveys.OrderByDescending(s => s.Title)
+                .Skip((page - 1) * size)
+                .Take(size)
+                .Select(s => mapper.Map<SurveyModel>(s)).ToList(),
+            TotalCount = await surveys.CountAsync()
+        };
     }
 
     /// <summary>
@@ -68,9 +61,9 @@ public class SurveysController : ControllerBase
     /// <returns></returns>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(SurveyModel), 200)]
-    public async Task<IActionResult> Detail(Guid id)
+    public async Task<IActionResult> GetSurvey(Guid id)
     {
-        var survey = await _dbContext.Surveys
+        var survey = await dbContext.Surveys
             .Include(s => s.Questions)
             .ThenInclude(q => (q as MultipleQuestion).Answers)
             .Include(s => s.Questions)
@@ -83,7 +76,7 @@ public class SurveysController : ControllerBase
 
         if (survey == null) return NotFound();
 
-        return Ok(_mapper.Map<SurveyModel>(survey));
+        return Ok(mapper.Map<SurveyModel>(survey));
     }
 
     /// <summary>
@@ -93,14 +86,14 @@ public class SurveysController : ControllerBase
     /// <returns></returns>
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = nameof(Roles.Admin))]
     [HttpPost]
-    public async Task<IActionResult> Add([FromBody] PostSurveyModel model)
+    public async Task<IActionResult> CreateSurvey([FromBody] SurveyWriteModel model)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        var survey = _mapper.Map<Survey>(model);
+        var survey = mapper.Map<Survey>(model);
 
-        _dbContext.Surveys.Add(survey);
-        await _dbContext.SaveChangesAsync();
+        dbContext.Surveys.Add(survey);
+        await dbContext.SaveChangesAsync();
 
         return Ok();
     }
@@ -111,10 +104,10 @@ public class SurveysController : ControllerBase
     /// <param name="surveyId"></param>
     /// <param name="model"></param>
     /// <returns></returns>
-    [HttpPost("{surveyId}/Questions")]
-    public async Task<IActionResult> AddQuestion(Guid surveyId, [FromBody] PostQuestionModel model)
+    [HttpPost("{surveyId}/questions")]
+    public async Task<IActionResult> CreateSurveyQuestion(Guid surveyId, [FromBody] SurveyQuestionWriteModel model)
     {
-        var survey = await _dbContext.Surveys.Include(s => s.Questions).FirstOrDefaultAsync(s => s.Id == surveyId);
+        var survey = await dbContext.Surveys.Include(s => s.Questions).FirstOrDefaultAsync(s => s.Id == surveyId);
 
         if (survey == null) return NotFound();
 
@@ -132,13 +125,13 @@ public class SurveysController : ControllerBase
                     return BadRequest(ModelState);
                 }
 
-                question = _mapper.Map<MultipleQuestion>(model);
+                question = mapper.Map<MultipleQuestion>(model);
                 (question as MultipleQuestion).Answers.ForEach(a => a.Question = question);
             }
                 break;
             case nameof(StringQuestion):
             {
-                question = _mapper.Map<StringQuestion>(model);
+                question = mapper.Map<StringQuestion>(model);
             }
                 break;
             default:
@@ -148,18 +141,18 @@ public class SurveysController : ControllerBase
             }
         }
 
-        foreach (var usrId in model.Users)
+        foreach (var usrId in model.UserIds)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == usrId);
+            var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == usrId);
 
             if (user == null) return NotFound();
 
             question.Users.Add(user);
         }
 
-        foreach (var grpId in model.Groups)
+        foreach (var grpId in model.GroupIds)
         {
-            var group = await _dbContext.Groups.FirstOrDefaultAsync(u => u.Id == grpId);
+            var group = await dbContext.Groups.FirstOrDefaultAsync(u => u.Id == grpId);
 
             if (group == null) return NotFound();
 
@@ -167,8 +160,97 @@ public class SurveysController : ControllerBase
         }
 
         survey.Questions.Add(question);
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
 
         return Ok();
+    }
+
+    [HttpPut("{surveyId}/questions/{questionId}")]
+    public Task<SurveyModel> UpdateSurveyQuestion(
+        Guid surveyId,
+        Guid questionId,
+        [FromBody] SurveyQuestionWriteModel model)
+    {
+        throw new NotImplementedException();
+    }
+
+    [HttpDelete("{surveyId}/questions/{questionId}")]
+    public Task<IActionResult> DeleteSurveyQuestion(
+        Guid surveyId,
+        Guid questionId)
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <summary>
+    ///     Получение отчёта
+    /// </summary>
+    /// <param name="surveyId"></param>
+    /// <returns></returns>
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = nameof(Roles.Admin))]
+    [HttpGet("report")]
+    public async Task<IActionResult> GetReport(Guid surveyId)
+    {
+        var survey = await dbContext.Surveys.AsNoTracking().Include(s => s.Questions.OrderBy(q => q.Title))
+            .FirstOrDefaultAsync(s => s.Id == surveyId);
+
+        if (survey == null) return NotFound();
+
+        var sessions = await dbContext.SurveySessions
+            .AsNoTracking()
+            .Include(s => s.User)
+            .Include(s => s.Answers)
+            .ThenInclude(a => a.Answer)
+            .Where(s => s.SurveyId == surveyId && s.End != null)
+            .ToListAsync();
+
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Результаты");
+        var currentRow = 1;
+        var column = 1;
+
+        worksheet.Cell(currentRow, column++).Value = "Email";
+        worksheet.Cell(currentRow, column++).Value = "Время прохождения";
+
+        foreach (var question in survey.Questions) worksheet.Cell(currentRow, column++).Value = question.Title;
+
+        currentRow++;
+
+        foreach (var answer in sessions)
+        {
+            column = 1;
+            worksheet.Cell(currentRow, column++).Value = answer.User.Email;
+
+            foreach (var question in survey.Questions)
+                switch (question.GetType().Name)
+                {
+                    case nameof(MultipleQuestion):
+                        worksheet.Cell(currentRow, column++).Value = string.Join(", ",
+                            answer.Answers.Where(a => a.QuestionId == question.Id)
+                                .Select(s => s.Answer.Text));
+                        break;
+                    case nameof(StringQuestion):
+                        worksheet.Cell(currentRow, column++).Value =
+                            answer.Answers.FirstOrDefault(a => a.QuestionId == question.Id)?.TextAnswer ?? "";
+                        break;
+                    default:
+                        worksheet.Cell(currentRow, column++).Value = "Unsupported";
+                        break;
+                }
+
+            var timespan = (answer.End - answer.Start).Value;
+            worksheet.Cell(currentRow, column++).Value =
+                $"{(int)timespan.TotalDays}д, {timespan.Hours} ч {timespan.Minutes}м {timespan.Seconds}с";
+
+            currentRow++;
+        }
+
+        using var stream = new MemoryStream();
+
+        workbook.SaveAs(stream);
+        var content = stream.ToArray();
+
+        return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            $"{survey.Title} - Результаты.xlsx");
     }
 }

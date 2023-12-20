@@ -5,7 +5,6 @@ using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -91,11 +90,12 @@ builder.Services.AddApiVersioning(o =>
     o.DefaultApiVersion = new ApiVersion(1, 0);
 });
 
-builder.Services.AddVersionedApiExplorer();
+builder.Services.AddVersionedApiExplorer(o => o.SubstituteApiVersionInUrl = true);
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("1.0", new OpenApiInfo { Title = "ShittyApi", Version = "1.0" });
+    c.SwaggerDoc("1.0", new OpenApiInfo { Title = "Gazprom Corporate Surveys API", Version = "1.0" });
+    c.CustomOperationIds(e => e.ActionDescriptor.RouteValues["action"]);
 
     var jwtSecurityScheme = new OpenApiSecurityScheme
     {
@@ -121,12 +121,12 @@ builder.Services.AddSwaggerGen(c =>
     var basePath = AppContext.BaseDirectory;
     var xmlPath = Path.Combine(basePath, "Shitty.xml");
 
-    //c.IncludeXmlComments(xmlPath);
+    // c.IncludeXmlComments(xmlPath);
 });
 
 builder.Services.AddControllers()
+    // TODO newtonsoft json in 2023??
     .AddNewtonsoftJson(o => o.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
-;
 
 var app = builder.Build();
 
@@ -135,17 +135,11 @@ if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
 
-    var provider = app.Services.GetService<IApiVersionDescriptionProvider>();
-
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        foreach (var description in provider.ApiVersionDescriptions)
-            c.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
-                description.GroupName == "66.6" ? "Shitty API Admin" : $"Shitty API V{description.GroupName}");
-        // c.SwaggerEndpoint("/swagger/v1/swagger.json", "Abiturient API V1");
         c.RoutePrefix = "";
-        c.DocumentTitle = "������������ � API";
+        c.SwaggerEndpoint("/swagger/1.0/swagger.json", "Gazprom Corporate Surveys API v1.0");
     });
 }
 

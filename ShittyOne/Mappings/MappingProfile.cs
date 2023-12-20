@@ -16,42 +16,38 @@ public class MappingProfile : Profile
         CreateMap<File, FileModel>()
             .ForMember(m => m.Url, map => map.MapFrom(m => GetImageUrl(m.SubDir)));
 
-        CreateMap<Group, GroupModel>()
+        CreateMap<Group, UserGroupModel>()
             .ForMember(m => m.Users, map => map.MapFrom(m => m.Users));
 
         CreateMap<User, UserModel>();
 
-        CreateMap<PostGroupModel, Group>()
-            .ForMember(m => m.Users, map => map.Ignore());
-
-
-        CreateMap<PostSurveyModel, Survey>()
+        CreateMap<SurveyWriteModel, Survey>()
             .ForMember(s => s.Questions, map => map.Ignore());
 
-        CreateMap<PostQuestionModel, MultipleQuestion>()
+        CreateMap<SurveyQuestionWriteModel, MultipleQuestion>()
             .ForMember(q => q.Groups, map => map.Ignore())
             .ForMember(q => q.Users, map => map.Ignore())
             .ForMember(q => q.File, map => map.Ignore())
             .ForMember(q => q.Answers, map => map.MapFrom(a => a.Answers));
 
-        CreateMap<PostQuestionModel, StringQuestion>()
+        CreateMap<SurveyQuestionWriteModel, StringQuestion>()
             .ForMember(q => q.Groups, map => map.Ignore())
             .ForMember(q => q.Users, map => map.Ignore())
             .ForMember(q => q.File, map => map.Ignore());
 
-        CreateMap<PostQuestionAnswerModel, SurveyQuestionAnswer>()
+        CreateMap<QuestionAnswerWriteModel, SurveyQuestionAnswer>()
             .ForMember(q => q.Text, map => map.MapFrom(q => q.Text));
 
-        CreateMap<SurveyQuestion, QuestionModel>()
+        CreateMap<SurveyQuestion, SurveyQuestionModel>()
             .Include<MultipleQuestion, MultipleQuestionModel>()
-            .Include<StringQuestion, StringQuestionModel>()
+            .Include<StringQuestion, SingleQuestionModel>()
             .ForMember(q => q.Type, map => map.MapFrom(q => q.GetType().Name));
 
         CreateMap<Survey, SurveyModel>();
 
         CreateMap<MultipleQuestion, MultipleQuestionModel>();
 
-        CreateMap<StringQuestion, StringQuestionModel>();
+        CreateMap<StringQuestion, SingleQuestionModel>();
 
         CreateMap<SurveyQuestionAnswer, SurveyQuestionAnswerModel>();
     }

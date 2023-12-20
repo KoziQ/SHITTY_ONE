@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ShittyOne.Entities;
 
-public class UserSession
+public class SurveySession
 {
     public Guid Id { get; set; }
     public DateTime Start { get; private set; } = DateTime.Now;
@@ -15,9 +15,9 @@ public class UserSession
     public Guid SurveyId { get; set; }
 }
 
-public class UserSessionConfiguration : IEntityTypeConfiguration<UserSession>
+public class SurveySessionConfiguration : IEntityTypeConfiguration<SurveySession>
 {
-    public void Configure(EntityTypeBuilder<UserSession> builder)
+    public void Configure(EntityTypeBuilder<SurveySession> builder)
     {
         builder.HasOne(s => s.User)
             .WithMany()

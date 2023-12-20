@@ -6,8 +6,6 @@ namespace ShittyOne.Controllers;
 
 [ApiController]
 [ApiVersion("1.0")]
-[Route("api/{version:apiVersion}/Surveys/{surveyId}/[controller]")]
+[Route("api/{version:apiVersion}/account")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class AccountController : ControllerBase
-{
-}
+public class AccountController : ControllerBase;

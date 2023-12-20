@@ -12,7 +12,7 @@ public class UserAnswer
     public SurveyQuestion Question { get; set; }
     public string? TextAnswer { get; set; }
     public Guid SessionId { get; set; }
-    public UserSession Session { get; set; }
+    public SurveySession Session { get; set; }
 }
 
 public class UserAnswerConfiguration : IEntityTypeConfiguration<UserAnswer>
