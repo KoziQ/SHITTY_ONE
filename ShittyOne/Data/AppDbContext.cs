@@ -4,34 +4,35 @@ using Microsoft.EntityFrameworkCore;
 using ShittyOne.Entities;
 using File = ShittyOne.Entities.File;
 
-namespace ShittyOne.Data
+namespace ShittyOne.Data;
+
+public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
 {
-    public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
+    public AppDbContext(DbContextOptions options) : base(options)
     {
-        public virtual DbSet<UserRefresh> Refreshes { get; set; }
-        public virtual DbSet<Group> Groups { get; set; }
-        public virtual DbSet<File> Files { get; set; }
+    }
 
-        public virtual DbSet<Survey> Surveys { get; set; }
-        public virtual DbSet<MultipleQuestion> MultipleQuestions { get; set; }
-        public virtual DbSet<StringQuestion> StringQuestions { get; set; }
-        public virtual DbSet<SurveyQuestionAnswer> SurveysAnswer { get; set; }
-        public virtual DbSet<UserAnswer> UserAnswers { get; set; }
-        public virtual DbSet<UserSession> UserSessions { get; set; }
+    public virtual DbSet<UserRefresh> Refreshes { get; set; }
+    public virtual DbSet<Group> Groups { get; set; }
+    public virtual DbSet<File> Files { get; set; }
 
-        public AppDbContext(DbContextOptions options) : base(options) { }
+    public virtual DbSet<Survey> Surveys { get; set; }
+    public virtual DbSet<MultipleQuestion> MultipleQuestions { get; set; }
+    public virtual DbSet<StringQuestion> StringQuestions { get; set; }
+    public virtual DbSet<SurveyQuestionAnswer> SurveysAnswer { get; set; }
+    public virtual DbSet<UserAnswer> UserAnswers { get; set; }
+    public virtual DbSet<UserSession> UserSessions { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder builder)
-        {
-            builder.ApplyConfiguration(new UserRefreshConfiguration());
-            builder.ApplyConfiguration(new GroupConfigurations());
-            builder.ApplyConfiguration(new SurveyConfiguration());
-            builder.ApplyConfiguration(new UserAnswerConfiguration());
-            builder.ApplyConfiguration(new UserSessionConfiguration());
-            builder.ApplyConfiguration(new BaseClassConfiguration());
-            builder.ApplyConfiguration(new MultipleQuestionConfiguration());
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        builder.ApplyConfiguration(new UserRefreshConfiguration());
+        builder.ApplyConfiguration(new GroupConfigurations());
+        builder.ApplyConfiguration(new SurveyConfiguration());
+        builder.ApplyConfiguration(new UserAnswerConfiguration());
+        builder.ApplyConfiguration(new UserSessionConfiguration());
+        builder.ApplyConfiguration(new BaseClassConfiguration());
+        builder.ApplyConfiguration(new MultipleQuestionConfiguration());
 
-            base.OnModelCreating(builder);
-        }
+        base.OnModelCreating(builder);
     }
 }

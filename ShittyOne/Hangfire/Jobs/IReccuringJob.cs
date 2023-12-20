@@ -1,11 +1,10 @@
-﻿namespace ShittyOne.Hangfire.Jobs
+﻿namespace ShittyOne.Hangfire.Jobs;
+
+public interface IRecurringJob
 {
-    public interface IRecurringJob
-    {
-        string CronExpression { get; }
+    string CronExpression { get; }
 
-        string JobId { get; }
+    string JobId { get; }
 
-        Task Execute();
-    }
+    Task Execute();
 }

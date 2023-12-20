@@ -2,13 +2,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ShittyOne.Controllers
+namespace ShittyOne.Controllers;
+
+[ApiController]
+[ApiVersion("1.0")]
+[Route("api/{version:apiVersion}/Surveys/{surveyId}/[controller]")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+public class AccountController : ControllerBase
 {
-    [ApiController]
-    [ApiVersion("1.0")]
-    [Route("api/{version:apiVersion}/Surveys/{surveyId}/[controller]")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public class AccountController : ControllerBase 
-    {
-    }
 }
