@@ -75,44 +75,6 @@ public class UserGroupsController(IMapper mapper, AppDbContext dbContext) : Cont
     }
 
     /// <summary>
-    ///     Получение пользователей
-    /// </summary>
-    /// <param name="page"></param>
-    /// <param name="size"></param>
-    /// <param name="search"></param>
-    /// <returns></returns>
-    [HttpGet("users")]
-    [ProducesResponseType(typeof(SelectModel<UserModel>), 200)]
-    public async Task<ActionResult<SelectModel<UserModel>>> SelectGroupUsers(int page = 1, int size = 10,
-        string? search = null)
-    {
-        if (page < 1 || size < 1)
-        {
-            ModelState.AddModelError("", "страница и размер должны быть больше 1");
-            return BadRequest(ModelState);
-        }
-
-        var users = dbContext.Users.AsNoTracking().AsQueryable();
-
-        if (!string.IsNullOrEmpty(search))
-        {
-            users = users.Where(g =>
-                EF.Functions.Like(g.UserName, $"%{search}%") ||
-                EF.Functions.Like(g.Email, $"%{search}%"));
-        }
-
-        return new SelectModel<UserModel>
-        {
-            Items = await users.OrderBy(g => g.UserName)
-                .Skip((page - 1) * size)
-                .Take(size)
-                .Select(g => mapper.Map<UserModel>(g))
-                .ToListAsync(),
-            TotalCount = await users.CountAsync()
-        };
-    }
-
-    /// <summary>
     ///     Создание группы
     /// </summary>
     /// <param name="model"></param>
