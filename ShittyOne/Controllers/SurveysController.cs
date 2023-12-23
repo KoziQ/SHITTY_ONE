@@ -210,9 +210,10 @@ public class SurveysController(AppDbContext dbContext, IMapper mapper) : Control
         var column = 1;
 
         worksheet.Cell(currentRow, column++).Value = "Email";
-        worksheet.Cell(currentRow, column++).Value = "Время прохождения";
 
         foreach (var question in survey.Questions) worksheet.Cell(currentRow, column++).Value = question.Title;
+
+        worksheet.Cell(currentRow, column++).Value = "Время прохождения";
 
         currentRow++;
 
