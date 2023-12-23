@@ -2,48 +2,29 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ShittyOne.Data;
 using ShittyOne.Models;
 using ShittyOne.Services;
 
-namespace ShittyOne.Controllers
+namespace ShittyOne.Controllers;
+
+[ApiController]
+[ApiVersion("1.0")]
+[Route("api/{version:apiVersion}/files")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+public class FilesController(IFileService fileService, IMapper mapper)
+    : Controller
 {
-    [ApiController]
-    [ApiVersion("1.0")]
-    [Route("api/{version:apiVersion}/[controller]")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public class FilesController : Controller
+    [RequestFormLimits(ValueLengthLimit = 502000, MultipartBodyLengthLimit = 5000000)]
+    [HttpPost("upload")]
+    public async Task<IActionResult> Upload([FromForm(Name = "file")] IFormFile? file)
     {
-        private readonly IFileService _fileService;
-        private readonly AppDbContext _dbContext;
-        private readonly IMapper _mapper;
+        if (file == null) return BadRequest();
 
-        public FilesController(IFileService fileService, AppDbContext dbContext, IMapper mapper)
-        {
-            _fileService = fileService;
-            _dbContext = dbContext;
-            _mapper = mapper;
-        }
+        var result = await fileService.AddFile(file);
+        if (result == null) return BadRequest();
 
-        [RequestFormLimits(ValueLengthLimit = 502000, MultipartBodyLengthLimit = 5000000)]
-        [HttpPost("Upload")]
-        public async Task<IActionResult> Upload([FromForm(Name = "file")] IFormFile file)
-        {
-            if(file == null)
-            {
-                return BadRequest();
-            }
+        var response = mapper.Map<FileModel>(result);
 
-            var result = await _fileService.AddFile(file);
-            if (result == null)
-            {
-                return BadRequest();
-            }
-
-            var response = _mapper.Map<FileModel>(result);
-
-            return Ok(response);
-
-        }
+        return Ok(response);
     }
 }

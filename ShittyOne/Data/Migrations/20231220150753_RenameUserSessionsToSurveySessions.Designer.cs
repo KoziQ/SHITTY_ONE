@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ShittyOne.Data;
 
@@ -11,9 +12,11 @@ using ShittyOne.Data;
 namespace ShittyOne.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231220150753_RenameUserSessionsToSurveySessions")]
+    partial class RenameUserSessionsToSurveySessions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -257,8 +260,17 @@ namespace ShittyOne.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("nvarchar(21)");
+
                     b.Property<Guid?>("FileId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("JsonContent")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Position")
                         .HasColumnType("int");
@@ -270,16 +282,17 @@ namespace ShittyOne.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("FileId");
 
                     b.HasIndex("SurveyId");
 
-                    b.ToTable("SurveyQuestions");
+                    b.ToTable("SurveyQuestion");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("SurveyQuestion");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("ShittyOne.Entities.SurveyQuestionAnswer", b =>
@@ -465,6 +478,20 @@ namespace ShittyOne.Data.Migrations
                     b.ToTable("SurveyQuestionUser");
                 });
 
+            modelBuilder.Entity("ShittyOne.Entities.MultipleQuestion", b =>
+                {
+                    b.HasBaseType("ShittyOne.Entities.SurveyQuestion");
+
+                    b.HasDiscriminator().HasValue("MultipleQuestion");
+                });
+
+            modelBuilder.Entity("ShittyOne.Entities.StringQuestion", b =>
+                {
+                    b.HasBaseType("ShittyOne.Entities.SurveyQuestion");
+
+                    b.HasDiscriminator().HasValue("StringQuestion");
+                });
+
             modelBuilder.Entity("GroupSurveyQuestion", b =>
                 {
                     b.HasOne("ShittyOne.Entities.Group", null)
@@ -576,7 +603,7 @@ namespace ShittyOne.Data.Migrations
 
             modelBuilder.Entity("ShittyOne.Entities.SurveyQuestionAnswer", b =>
                 {
-                    b.HasOne("ShittyOne.Entities.SurveyQuestion", "Question")
+                    b.HasOne("ShittyOne.Entities.MultipleQuestion", "Question")
                         .WithMany("Answers")
                         .HasForeignKey("SuveyQuestionId")
                         .OnDelete(DeleteBehavior.ClientCascade)
@@ -661,11 +688,6 @@ namespace ShittyOne.Data.Migrations
                     b.Navigation("Questions");
                 });
 
-            modelBuilder.Entity("ShittyOne.Entities.SurveyQuestion", b =>
-                {
-                    b.Navigation("Answers");
-                });
-
             modelBuilder.Entity("ShittyOne.Entities.SurveySession", b =>
                 {
                     b.Navigation("Answers");
@@ -674,6 +696,11 @@ namespace ShittyOne.Data.Migrations
             modelBuilder.Entity("ShittyOne.Entities.User", b =>
                 {
                     b.Navigation("Refreshes");
+                });
+
+            modelBuilder.Entity("ShittyOne.Entities.MultipleQuestion", b =>
+                {
+                    b.Navigation("Answers");
                 });
 #pragma warning restore 612, 618
         }
