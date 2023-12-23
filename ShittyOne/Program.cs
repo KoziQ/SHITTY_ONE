@@ -1,5 +1,6 @@
 using System.Text;
 using AutoMapper;
+using FluentEmail.MailKitSmtp;
 using Hangfire;
 using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -73,10 +74,19 @@ builder.Services.AddAuthentication(opts =>
             ClockSkew = TimeSpan.Zero
         };
     });
+var smtpEmailOptions = builder.Configuration.GetSection("SmtpEmailOptions");
 
+builder.Services.AddFluentEmail(smtpEmailOptions["User"])
+    .AddRazorRenderer()
+    .AddMailKitSender(smtpEmailOptions.Get<SmtpClientOptions>());
+
+builder.Services.Configure<ImapEmailOptions>(c => builder.Configuration.GetSection("ImapEmailOptions").Bind(c));
+
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddJobManager()
-    .AddrecurringJob<FilesCleanUpJob>();
+    .AddrecurringJob<FilesCleanUpJob>()
+    .AddrecurringJob<EmailSurveyJob>();
 
 
 builder.Services.AddSingleton(provider => new MapperConfiguration(cfg =>

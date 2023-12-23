@@ -16,3 +16,12 @@ public class JwtOptions
     public string SecretKey { get; set; }
     public TimeSpan RrefreshLifetime { get; set; }
 }
+
+public class ImapEmailOptions
+{
+    public string Email { get; set; }
+    public string Password { get; set; }
+    public bool UseSsl { get; set; }
+    public string Host { get; set; }
+    public int Port { get; set; }
+}

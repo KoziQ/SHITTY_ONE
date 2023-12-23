@@ -1,0 +1,30 @@
+﻿@using ShittyOne.Models;
+@using ShittyOne.Entities;
+@using System.Linq;
+@model dynamic
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+<h1>Если вы желаете пройти опрос по email, то отправьте сообщение на данный почтовый ящик с темой @Model.Id.ToString()</h1>
+<p>Ответ на каждый вопрос разделять "Enter", если желаете выбрать несколько ответов, разделять запятой</p>
+@foreach(var question in Model.Questions)
+{
+    <h1>@question.Title</h1>
+    @switch (question.Type)
+    {
+        case nameof(StringQuestion): {
+                <h3>Впиши ответ</h3>
+            } break;
+        case nameof(MultipleQuestion):
+            {
+                foreach (var (answer, index) in (question as MultipleQuestionModel).Answers.Select((a,i) => (a,i)))
+                {
+                    <h3>@(index+1) - @answer.Text</h3>
+                }
+            } break;
+    }
+    <br />
+    <br />
+}
