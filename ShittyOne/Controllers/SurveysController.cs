@@ -65,7 +65,7 @@ public class SurveysController(AppDbContext dbContext, IMapper mapper) : Control
     {
         var survey = await dbContext.Surveys
             .Include(s => s.Questions)
-            .ThenInclude(q => (q as MultipleQuestion).Answers)
+            .ThenInclude(q => q.Answers)
             .Include(s => s.Questions)
             .ThenInclude(q => q.Groups)
             .Include(s => s.Questions)
@@ -98,6 +98,24 @@ public class SurveysController(AppDbContext dbContext, IMapper mapper) : Control
         return Ok();
     }
 
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = nameof(Roles.Admin))]
+    [HttpPut("{id}")]
+    public async Task<ActionResult<SurveyModel>> UpdateSurvey(Guid id, [FromBody] SurveyWriteModel model)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var survey = await dbContext.Surveys.FirstOrDefaultAsync(s => s.Id == id);
+
+        if (survey == null) return NotFound();
+
+        survey.Title = model.Title;
+        survey.JsonContent = model.JsonContent;
+
+        await dbContext.SaveChangesAsync();
+
+        return mapper.Map<SurveyModel>(survey);
+    }
+
     /// <summary>
     ///     Создание вопросов
     /// </summary>
@@ -105,41 +123,18 @@ public class SurveysController(AppDbContext dbContext, IMapper mapper) : Control
     /// <param name="model"></param>
     /// <returns></returns>
     [HttpPost("{surveyId}/questions")]
-    public async Task<IActionResult> CreateSurveyQuestion(Guid surveyId, [FromBody] SurveyQuestionWriteModel model)
+    public async Task<ActionResult<SurveyQuestionModel>> CreateSurveyQuestion(Guid surveyId,
+        [FromBody] SurveyQuestionWriteModel model)
     {
-        var survey = await dbContext.Surveys.Include(s => s.Questions).FirstOrDefaultAsync(s => s.Id == surveyId);
+        var survey = await dbContext.Surveys
+            .Include(s => s.Questions)
+            .FirstOrDefaultAsync(s => s.Id == surveyId);
 
         if (survey == null) return NotFound();
 
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        SurveyQuestion question;
-
-        switch (model.Type)
-        {
-            case nameof(MultipleQuestion):
-            {
-                if (!model.Answers.Any())
-                {
-                    ModelState.AddModelError(nameof(model.Answers), "Ответы - обязательное поле");
-                    return BadRequest(ModelState);
-                }
-
-                question = mapper.Map<MultipleQuestion>(model);
-                (question as MultipleQuestion).Answers.ForEach(a => a.Question = question);
-            }
-                break;
-            case nameof(StringQuestion):
-            {
-                question = mapper.Map<StringQuestion>(model);
-            }
-                break;
-            default:
-            {
-                ModelState.AddModelError(nameof(model.Type), "Невалидный тип вопроса");
-                return BadRequest(ModelState);
-            }
-        }
+        var question = mapper.Map<SurveyQuestion>(model);
 
         foreach (var usrId in model.UserIds)
         {
@@ -162,24 +157,73 @@ public class SurveysController(AppDbContext dbContext, IMapper mapper) : Control
         survey.Questions.Add(question);
         await dbContext.SaveChangesAsync();
 
-        return Ok();
+        return mapper.Map<SurveyQuestionModel>(question);
     }
 
     [HttpPut("{surveyId}/questions/{questionId}")]
-    public Task<SurveyModel> UpdateSurveyQuestion(
+    public async Task<ActionResult<SurveyQuestionModel>> UpdateSurveyQuestion(
         Guid surveyId,
         Guid questionId,
         [FromBody] SurveyQuestionWriteModel model)
     {
-        throw new NotImplementedException();
+        var survey = await dbContext.Surveys
+            .Include(s => s.Questions)
+            .FirstOrDefaultAsync(s => s.Id == surveyId);
+
+        if (survey == null) return NotFound();
+
+        var question = survey.Questions.FirstOrDefault(q => q.Id == questionId);
+        if (question == null) return NotFound();
+
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        mapper.Map(model, question);
+
+        question.Users.Clear();
+        question.Groups.Clear();
+
+        foreach (var usrId in model.UserIds)
+        {
+            var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == usrId);
+
+            if (user == null) return NotFound();
+
+            question.Users.Add(user);
+        }
+
+        foreach (var grpId in model.GroupIds)
+        {
+            var group = await dbContext.Groups.FirstOrDefaultAsync(u => u.Id == grpId);
+
+            if (group == null) return NotFound();
+
+            question.Groups.Add(group);
+        }
+
+        survey.Questions[survey.Questions.IndexOf(question)] = question;
+        await dbContext.SaveChangesAsync();
+
+        return mapper.Map<SurveyQuestionModel>(question);
     }
 
     [HttpDelete("{surveyId}/questions/{questionId}")]
-    public Task<IActionResult> DeleteSurveyQuestion(
+    public async Task<ActionResult> DeleteSurveyQuestion(
         Guid surveyId,
         Guid questionId)
     {
-        throw new NotImplementedException();
+        var survey = await dbContext.Surveys
+            .Include(s => s.Questions)
+            .FirstOrDefaultAsync(s => s.Id == surveyId);
+
+        if (survey == null) return NotFound();
+
+        var question = survey.Questions.FirstOrDefault(q => q.Id == questionId);
+        if (question == null) return NotFound();
+
+        survey.Questions.Remove(question);
+        await dbContext.SaveChangesAsync();
+
+        return Ok();
     }
 
     /// <summary>
@@ -223,21 +267,30 @@ public class SurveysController(AppDbContext dbContext, IMapper mapper) : Control
             worksheet.Cell(currentRow, column++).Value = answer.User.Email;
 
             foreach (var question in survey.Questions)
-                switch (question.GetType().Name)
+            {
+                switch (question.Type)
                 {
-                    case nameof(MultipleQuestion):
+                    case SurveyQuestionType.Single:
+                    case SurveyQuestionType.Multiple:
+                    {
                         worksheet.Cell(currentRow, column++).Value = string.Join(", ",
                             answer.Answers.Where(a => a.QuestionId == question.Id)
                                 .Select(s => s.Answer.Text));
                         break;
-                    case nameof(StringQuestion):
+                    }
+                    case SurveyQuestionType.Text:
+                    {
                         worksheet.Cell(currentRow, column++).Value =
                             answer.Answers.FirstOrDefault(a => a.QuestionId == question.Id)?.TextAnswer ?? "";
                         break;
+                    }
                     default:
+                    {
                         worksheet.Cell(currentRow, column++).Value = "Unsupported";
                         break;
+                    }
                 }
+            }
 
             var timespan = (answer.End - answer.Start).Value;
             worksheet.Cell(currentRow, column++).Value =

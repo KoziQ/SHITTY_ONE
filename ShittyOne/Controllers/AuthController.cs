@@ -94,6 +94,7 @@ public class AuthController(
     /// <param name="model"></param>
     /// <returns></returns>
     [HttpPost("refresh")]
+    [ProducesResponseType<TokenModel>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<TokenModel>> Refresh([FromBody] TokenModel model)
     {

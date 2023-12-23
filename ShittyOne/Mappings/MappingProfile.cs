@@ -24,30 +24,18 @@ public class MappingProfile : Profile
         CreateMap<SurveyWriteModel, Survey>()
             .ForMember(s => s.Questions, map => map.Ignore());
 
-        CreateMap<SurveyQuestionWriteModel, MultipleQuestion>()
+        CreateMap<SurveyQuestionWriteModel, SurveyQuestion>()
             .ForMember(q => q.Groups, map => map.Ignore())
             .ForMember(q => q.Users, map => map.Ignore())
             .ForMember(q => q.File, map => map.Ignore())
             .ForMember(q => q.Answers, map => map.MapFrom(a => a.Answers));
 
-        CreateMap<SurveyQuestionWriteModel, StringQuestion>()
-            .ForMember(q => q.Groups, map => map.Ignore())
-            .ForMember(q => q.Users, map => map.Ignore())
-            .ForMember(q => q.File, map => map.Ignore());
-
         CreateMap<QuestionAnswerWriteModel, SurveyQuestionAnswer>()
             .ForMember(q => q.Text, map => map.MapFrom(q => q.Text));
 
-        CreateMap<SurveyQuestion, SurveyQuestionModel>()
-            .Include<MultipleQuestion, MultipleQuestionModel>()
-            .Include<StringQuestion, SingleQuestionModel>()
-            .ForMember(q => q.Type, map => map.MapFrom(q => q.GetType().Name));
+        CreateMap<SurveyQuestion, SurveyQuestionModel>();
 
         CreateMap<Survey, SurveyModel>();
-
-        CreateMap<MultipleQuestion, MultipleQuestionModel>();
-
-        CreateMap<StringQuestion, SingleQuestionModel>();
 
         CreateMap<SurveyQuestionAnswer, SurveyQuestionAnswerModel>();
     }

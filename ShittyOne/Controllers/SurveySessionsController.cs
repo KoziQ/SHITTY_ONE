@@ -28,7 +28,7 @@ public class SurveySessionsController(AppDbContext dbContext, IMapper mapper) : 
             .Include(s => s.Questions.Where(q => q.Users.Any(u => u.Id.ToString() == User.GetId())))
             .ThenInclude(q => q.File)
             .Include(s => s.Questions)
-            .ThenInclude(l => (l as MultipleQuestion).Answers)
+            .ThenInclude(l => l.Answers)
             .AsSplitQuery()
             .FirstOrDefaultAsync(s => s.Id == surveyId);
 
@@ -88,22 +88,10 @@ public class SurveySessionsController(AppDbContext dbContext, IMapper mapper) : 
             return NotFound();
         }
 
-        switch (question.GetType().Name)
+        switch (question.Type)
         {
-            case nameof(StringQuestion):
-            {
-                if (model.Text == null) return BadRequest(ModelState);
-
-                surveySession.Answers.RemoveAll(a => a.QuestionId == questionId);
-                surveySession.Answers.Add(new UserAnswer
-                {
-                    Question = question,
-                    Session = surveySession,
-                    TextAnswer = model.Text
-                });
-            }
-                break;
-            case nameof(MultipleQuestion):
+            case SurveyQuestionType.Single:
+            case SurveyQuestionType.Multiple:
             {
                 if (!model.Answers.Any()) return BadRequest(ModelState);
 
@@ -121,15 +109,31 @@ public class SurveySessionsController(AppDbContext dbContext, IMapper mapper) : 
                         Answer = temp
                     });
                 }
-            }
+
                 break;
-            default: return NotFound();
+            }
+            case SurveyQuestionType.Text:
+            {
+                if (model.Text == null) return BadRequest(ModelState);
+
+                surveySession.Answers.RemoveAll(a => a.QuestionId == questionId);
+                surveySession.Answers.Add(new UserAnswer
+                {
+                    Question = question,
+                    Session = surveySession,
+                    TextAnswer = model.Text
+                });
+
+                break;
+            }
+            default:
+            {
+                return NotFound();
+            }
         }
 
-        var questions = dbContext.Set<SurveyQuestion>().Where(q => q.Users.Any(u => u.Id.ToString() == User.GetId()))
-            .Count();
-        //Check if session was completed
-        if (surveySession.Answers.GroupBy(a => a.QuestionId).Count() == questions) surveySession.End = DateTime.Now;
+        var questions = dbContext.Set<SurveyQuestion>()
+            .Count(q => q.Users.Any(u => u.Id.ToString() == User.GetId()));
 
         await dbContext.SaveChangesAsync();
 
@@ -141,7 +145,7 @@ public class SurveySessionsController(AppDbContext dbContext, IMapper mapper) : 
             Started = surveySession.Start
         });
     }
-    
+
     [HttpPost("complete")]
     public async Task<IActionResult> CompleteSurveySession(Guid surveySessionId)
     {

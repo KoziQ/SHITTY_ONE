@@ -1,14 +1,6 @@
 ﻿using FluentEmail.Core;
 using System.Dynamic;
 using System.Reflection;
-using MailKit.Net.Pop3;
-using MailKit.Net.Smtp;
-using MimeKit;
-using MailKit.Net.Imap;
-using MailKit.Search;
-using System.Runtime.InteropServices.Marshalling;
-using DocumentFormat.OpenXml.Drawing.Charts;
-using MailKit;
 
 namespace ShittyOne.Services
 {

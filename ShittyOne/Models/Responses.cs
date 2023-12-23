@@ -1,4 +1,6 @@
-﻿namespace ShittyOne.Models;
+﻿using ShittyOne.Entities;
+
+namespace ShittyOne.Models;
 
 public class TokenModel
 {
@@ -42,25 +44,17 @@ public class SurveyModel
     public List<SurveyQuestionModel> Questions { get; set; }
 }
 
-public abstract class SurveyQuestionModel
+public class SurveyQuestionModel
 {
     public Guid Id { get; set; }
+    public SurveyQuestionType Type { get; set; }
+
     public string Title { get; set; }
-    public string Type { get; set; }
-    public string JsonContent { get; set; }
-    public SurveyModel Survey { get; set; }
+
+    public List<SurveyQuestionAnswerModel> Answers { get; set; } = new();
+
     public List<UserModel> Users { get; set; } = new();
     public List<UserGroupModel> Groups { get; set; } = new();
-}
-
-public class SingleQuestionModel : SurveyQuestionModel
-{
-    public SurveyQuestionAnswerModel Answer { get; set; }
-}
-
-public class MultipleQuestionModel : SurveyQuestionModel
-{
-    public List<SurveyQuestionAnswerModel> Answers { get; set; }
 }
 
 public class SurveyQuestionAnswerModel

@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using ShittyOne.Data;
 using ShittyOne.Entities;
 using ShittyOne.Hangfire;
@@ -136,7 +137,13 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddControllers()
     // TODO newtonsoft json in 2023??
-    .AddNewtonsoftJson(o => o.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
+    .AddNewtonsoftJson(o =>
+    {
+        o.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+        o.SerializerSettings.Converters.Add(new StringEnumConverter());
+    });
+
+builder.Services.AddSwaggerGenNewtonsoftSupport();
 
 var app = builder.Build();
 

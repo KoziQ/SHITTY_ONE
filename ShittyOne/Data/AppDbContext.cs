@@ -13,8 +13,9 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
     public virtual DbSet<File> Files { get; set; }
 
     public virtual DbSet<Survey> Surveys { get; set; }
-    public virtual DbSet<MultipleQuestion> MultipleQuestions { get; set; }
-    public virtual DbSet<StringQuestion> StringQuestions { get; set; }
+
+    public virtual DbSet<SurveyQuestion> SurveyQuestions { get; set; }
+
     public virtual DbSet<SurveyQuestionAnswer> SurveysAnswer { get; set; }
     public virtual DbSet<UserAnswer> UserAnswers { get; set; }
     public virtual DbSet<SurveySession> SurveySessions { get; set; }
@@ -26,8 +27,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
         builder.ApplyConfiguration(new SurveyConfiguration());
         builder.ApplyConfiguration(new UserAnswerConfiguration());
         builder.ApplyConfiguration(new SurveySessionConfiguration());
-        builder.ApplyConfiguration(new BaseClassConfiguration());
-        builder.ApplyConfiguration(new MultipleQuestionConfiguration());
+        builder.ApplyConfiguration(new SurveyQuestionConfiguration());
 
         base.OnModelCreating(builder);
     }

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using ShittyOne.Entities;
 
 namespace ShittyOne.Models;
 
@@ -26,7 +27,6 @@ public class SurveyWriteModel
     [Required(ErrorMessage = "Заголовок - обязательное поле")]
     public string Title { get; set; }
 
-    [Required(ErrorMessage = "Контент - обязательное поле")]
     public string JsonContent { get; set; }
 
     public Guid? FileId { get; set; }
@@ -37,11 +37,8 @@ public class SurveyQuestionWriteModel
     [Required(ErrorMessage = "Заголовок - обязательное поле")]
     public string Title { get; set; }
 
-    [Required(ErrorMessage = "Контент - обязательное поле")]
-    public string JsonContent { get; set; }
-
     [Required(ErrorMessage = "Тип вопроса - обязательное поле")]
-    public string Type { get; set; }
+    public SurveyQuestionType Type { get; set; }
 
     public List<QuestionAnswerWriteModel> Answers { get; set; } = new();
 
@@ -51,6 +48,7 @@ public class SurveyQuestionWriteModel
 
 public class QuestionAnswerWriteModel
 {
+    public Guid? Id { get; set; }
     public string Text { get; set; }
 }
 

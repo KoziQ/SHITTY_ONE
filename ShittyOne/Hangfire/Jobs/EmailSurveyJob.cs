@@ -1,5 +1,4 @@
-﻿
-using MailKit.Net.Imap;
+﻿using MailKit.Net.Imap;
 using MailKit.Search;
 using MailKit;
 using MimeKit;
@@ -7,11 +6,7 @@ using ShittyOne.Models;
 using Microsoft.Extensions.Options;
 using ShittyOne.Data;
 using Microsoft.EntityFrameworkCore;
-using DocumentFormat.OpenXml.InkML;
 using ShittyOne.Entities;
-using Org.BouncyCastle.Asn1.X509.Qualified;
-using System.IO.Pipes;
-using FluentEmail.Core;
 using Hangfire;
 
 namespace ShittyOne.Hangfire.Jobs
@@ -40,7 +35,7 @@ namespace ShittyOne.Hangfire.Jobs
                 var userAdress = (message.From.Mailboxes.FirstOrDefault()?.Address ?? "");
                 var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == userAdress);
 
-                if(user == null)
+                if (user == null)
                 {
                     continue;
                 }
@@ -49,11 +44,11 @@ namespace ShittyOne.Hangfire.Jobs
                     .Include(s => s.Questions.Where(q => q.Users.Any(u => u.Id == user.Id)).OrderBy(s => s.Title))
                     .ThenInclude(q => q.File)
                     .Include(s => s.Questions)
-                    .ThenInclude(l => (l as MultipleQuestion).Answers.OrderBy(a => a.Text))
+                    .ThenInclude(l => l.Answers.OrderBy(a => a.Text))
                     .AsSplitQuery()
                     .FirstOrDefaultAsync(s => s.Id.ToString().ToLower() == message.Subject);
 
-                if(survey == null)
+                if (survey == null)
                 {
                     continue;
                 }
@@ -72,7 +67,7 @@ namespace ShittyOne.Hangfire.Jobs
         private async Task<bool> CompleteSurvey(User user, Survey survey, string body)
         {
             var answers = body.Split("\r\n");
-            if(answers.Count() != survey.Questions.Count)
+            if (answers.Count() != survey.Questions.Count)
             {
                 return false;
             }
@@ -81,30 +76,35 @@ namespace ShittyOne.Hangfire.Jobs
 
             foreach (var (question, index) in survey.Questions.Select((q, i) => (q, i)))
             {
-                switch (question.GetType().Name)
+                switch (question.Type)
                 {
-                    case nameof(MultipleQuestion):
+                    case SurveyQuestionType.Single:
+                    case SurveyQuestionType.Multiple:
+                    {
+                        foreach (var answer in answers[index].Replace(" ", "").Split(','))
                         {
-                            foreach (var answer in answers[index].Replace(" ", "").Split(','))
+                            if (!int.TryParse(answer, out var questionIndex) || questionIndex > question.Answers.Count)
                             {
-                                if(!int.TryParse(answer, out var questionIndex) || questionIndex
-                                    > (question as MultipleQuestion).Answers.Count)
-                                {
-                                    return false;
-                                }
-                                userSession.Answers.Add(new UserAnswer()
-                                {
-                                    Question = question,
-                                    Answer = (question as MultipleQuestion).Answers[questionIndex-1],
-                                });
+                                return false;
                             }
-                        } break;
-                    case nameof(StringQuestion): 
-                        {
-                            userSession.Answers.Add(new UserAnswer { Question = question, TextAnswer = answers[index]! });
-                        } break;
-                    default: return false;
+
+                            userSession.Answers.Add(new UserAnswer
+                            {
+                                Question = question,
+                                Answer = question.Answers[questionIndex - 1],
+                            });
+                        }
+
+                        break;
+                    }
+                    case SurveyQuestionType.Text:
+                    {
+                        userSession.Answers.Add(new UserAnswer { Question = question, TextAnswer = answers[index]! });
+                        break;
+                    }
                 }
+
+                return false;
             }
 
             userSession.End = DateTime.Now;
@@ -127,8 +127,8 @@ namespace ShittyOne.Hangfire.Jobs
 
             await client.Inbox.OpenAsync(MailKit.FolderAccess.ReadWrite);
 
-            foreach (var msg in client.Inbox.Fetch(client.Inbox.Search(SearchQuery.NotSeen)
-                , MessageSummaryItems.Full | MessageSummaryItems.BodyStructure))
+            foreach (var msg in client.Inbox.Fetch(client.Inbox.Search(SearchQuery.NotSeen),
+                         MessageSummaryItems.Full | MessageSummaryItems.BodyStructure))
             {
                 var message = client.Inbox.GetMessage(msg.Index);
                 await client.Inbox.AddFlagsAsync(msg.Index, MessageFlags.Seen, true);

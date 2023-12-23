@@ -1,36 +1,36 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ShittyOne.Entities;
 
-//TPH - base class
-public abstract class SurveyQuestion
+public enum SurveyQuestionType
 {
-    public Guid Id { get; set; }
-    public int Position { get; set; }
-    public string Title { get; set; }
-    public string JsonContent { get; set; }
-    public Guid SurveyId { get; set; }
-    public Survey Survey { get; set; }
-    public Guid? FileId { get; set; }
-    public File? File { get; set; }
-    public List<Group> Groups { get; set; } = new();
-    public List<User> Users { get; set; } = new();
+    Single,
+    Multiple,
+    Text
 }
 
-[Display(Name = "Вопрос с множественны выбором")]
-public class MultipleQuestion : SurveyQuestion
+public class SurveyQuestion
 {
+    public Guid Id { get; set; }
+    public SurveyQuestionType Type { get; set; }
+    public int Position { get; set; }
+
+    public string Title { get; set; }
+
+    public Guid SurveyId { get; set; }
+    public Survey Survey { get; set; }
+
+    public Guid? FileId { get; set; }
+    public File? File { get; set; }
+
+    public List<Group> Groups { get; set; } = new();
+    public List<User> Users { get; set; } = new();
+
     public List<SurveyQuestionAnswer> Answers { get; set; } = new();
 }
 
-[Display(Name = "Вопрос со свободным варинатом ответа")]
-public class StringQuestion : SurveyQuestion
-{
-}
-
-public class BaseClassConfiguration : IEntityTypeConfiguration<SurveyQuestion>
+public class SurveyQuestionConfiguration : IEntityTypeConfiguration<SurveyQuestion>
 {
     public void Configure(EntityTypeBuilder<SurveyQuestion> builder)
     {
@@ -49,15 +49,9 @@ public class BaseClassConfiguration : IEntityTypeConfiguration<SurveyQuestion>
 
         builder.HasMany(s => s.Groups)
             .WithMany();
-    }
-}
 
-public class MultipleQuestionConfiguration : IEntityTypeConfiguration<MultipleQuestion>
-{
-    public void Configure(EntityTypeBuilder<MultipleQuestion> builder)
-    {
         builder.HasMany(s => s.Answers)
-            .WithOne(s => s.Question as MultipleQuestion)
+            .WithOne(s => s.Question)
             .HasForeignKey(s => s.SuveyQuestionId)
             .OnDelete(DeleteBehavior.ClientCascade);
     }
